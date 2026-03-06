@@ -128,7 +128,7 @@ def download_model(repo_id, local_dir, exclude_patterns=None, required=False):
 if __name__ == "__main__":
     # LivePortrait (核心模型，必须下载)
     download_model(
-        repo_id="KlingAIResearch/LivePortrait",
+        repo_id="KlingTeam/LivePortrait",
         local_dir="models/LivePortrait/pretrained_weights",
         exclude_patterns=["*.git*", "README.md", "docs", "assets"],
         required=True

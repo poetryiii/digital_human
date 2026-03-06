@@ -5,10 +5,9 @@ import json
 from requests.exceptions import RequestException
 
 # 配置
-BASE_URL = "http://localhost:55071"
+BASE_URL = "http://localhost:35829"
 TIMEOUT = 10  # 单次请求超时时间（秒）
 RETRY_INTERVAL = 2  # 轮询间隔（秒）
-MAX_RETRIES = 5  # 提交任务最大重试次数
 
 def print_color(text, color="white"):
     """带颜色输出，方便区分日志"""
@@ -38,44 +37,37 @@ def submit_task():
         return None
 
     # 多次重试提交
-    for retry in range(MAX_RETRIES):
-        try:
-            print_color(f"\n[第 {retry+1} 次尝试] 提交任务...", "blue")
-            files = {
-                "image": open(image_path, "rb"),
-                "reference_audio": open(audio_path, "rb")
-            }
-            data = {"text": text}
+    try:
+        print_color(f"\n[第 1 次尝试] 提交任务...", "blue")
+        files = {
+            "image": open(image_path, "rb"),
+            "reference_audio": open(audio_path, "rb")
+        }
+        data = {"text": text}
+        
+        # 发送请求（短超时，避免卡死）
+        response = requests.post(
+            f"{BASE_URL}/api/generate",
+            files=files,
+            data=data,
+            timeout=TIMEOUT
+        )
+        
+        if response.status_code == 200:
+            result = response.json()
+            task_id = result.get("task_id")
+            print_color(f"✅ 任务提交成功！Task ID: {task_id}", "green")
+            return task_id
+        else:
+            print_color(f"❌ 提交失败，状态码: {response.status_code}", "red")
+            print_color(f"响应内容: {response.text}", "yellow")
             
-            # 发送请求（短超时，避免卡死）
-            response = requests.post(
-                f"{BASE_URL}/api/generate",
-                files=files,
-                data=data,
-                timeout=TIMEOUT
-            )
-            
-            if response.status_code == 200:
-                result = response.json()
-                task_id = result.get("task_id")
-                print_color(f"✅ 任务提交成功！Task ID: {task_id}", "green")
-                return task_id
-            else:
-                print_color(f"❌ 提交失败，状态码: {response.status_code}", "red")
-                print_color(f"响应内容: {response.text}", "yellow")
-                
-        except RequestException as e:
-            print_color(f"⚠️  请求异常: {str(e)}", "yellow")
-            if retry < MAX_RETRIES - 1:
-                print_color(f"等待 {RETRY_INTERVAL} 秒后重试...", "yellow")
-                time.sleep(RETRY_INTERVAL)
-            else:
-                print_color(f"❌ 多次重试失败，退出", "red")
-                return None
-        finally:
-            # 确保文件句柄关闭
-            for f in files.values():
-                f.close()
+    except RequestException as e:
+        print_color(f"⚠️  请求异常: {str(e)}", "yellow")
+    finally:
+        # 确保文件句柄关闭
+        for f in files.values():
+            f.close()
 
 def poll_task_status(task_id):
     """轮询任务状态（支持优雅退出）"""
