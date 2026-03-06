@@ -18,12 +18,8 @@ from tqdm import tqdm
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 INPUT_DIR = os.path.join(BASE_DIR, "data", "inputs")
 OUTPUT_DIR = os.path.join(BASE_DIR, "data", "outputs")
-PROGRESS_DIR = os.path.join(OUTPUT_DIR, ".progress")
-
-# 🔥 关键修正：LIVE_PORTRAIT_PATH 指向包含 assets 的目录（不是demo.py的目录）
 LIVE_PORTRAIT_PATH = os.path.join(BASE_DIR, "models", "LivePortrait")
-# 🔥 关键修正：DEMO_SCRIPT_PATH 直接指向同级的 demo.py
-DEMO_SCRIPT_PATH = os.path.join(BASE_DIR, "demo.py")  # demo.py和main.py同级
+PROGRESS_DIR = os.path.join(OUTPUT_DIR, ".progress")
 
 # 创建必要目录
 for dir_path in [INPUT_DIR, OUTPUT_DIR, PROGRESS_DIR]:
@@ -106,11 +102,8 @@ def generate_digital_human_sync(img_path: str, text: str, ref_audio_path: str):
         save_task_progress(task_id, 20, "running")
         
         drive_video_path = os.path.join(LIVE_PORTRAIT_PATH, "assets/examples/driving/d0.mp4")
-        # 🔥 新增：检查同级的 demo.py 是否存在
-        if not os.path.exists(DEMO_SCRIPT_PATH):
-            raise Exception(f"demo.py 文件不存在！路径: {DEMO_SCRIPT_PATH}\n请确认 demo.py 和 main.py 在同一级目录")
         if not os.path.exists(drive_video_path):
-            raise Exception(f"驱动视频不存在！路径: {drive_video_path}\n请检查 LivePortrait/assets 目录")
+            raise Exception(f"驱动视频不存在: {drive_video_path}")
 
         # --- 步骤 3: 设备初始化 (30%) ---
         total_progress.set_description("设备初始化中")
@@ -129,12 +122,12 @@ def generate_digital_human_sync(img_path: str, text: str, ref_audio_path: str):
         output_video_temp = os.path.join(OUTPUT_DIR, f"{task_id}_temp.mp4")
         final_video = os.path.join(OUTPUT_DIR, f"{task_id}_final.mp4")
         
-        # 🔥 修正：使用同级的 demo.py 路径
+        # 构建执行命令
         cmd = [
             sys.executable,
-            DEMO_SCRIPT_PATH,  # 直接用同级的 demo.py
+            os.path.join(LIVE_PORTRAIT_PATH, "demo.py"),
             "--source_image", img_path,
-            "--driving_video", drive_video_path,  # 驱动视频仍在 models/LivePortrait/assets 下
+            "--driving_video", drive_video_path,
             "--output", output_video_temp,
             "--device", device,
             "--fps", "10"
@@ -149,10 +142,7 @@ def generate_digital_human_sync(img_path: str, text: str, ref_audio_path: str):
                 text=True,
                 check=True
             )
-        # total_progress.write(f"✅ LivePortrait 执行完成: {result.stdout[:200]}")
-        # 🔥 新增：打印完整的输出和错误日志
-        total_progress.write(f"✅ LivePortrait STDOUT: {result.stdout}")
-        total_progress.write(f"❌ LivePortrait STDERR: {result.stderr}")  # 打印完整错误日志
+        total_progress.write(f"✅ LivePortrait 执行完成: {result.stdout[:200]}")
 
         # --- 步骤 5: 合并音频 (95%) ---
         total_progress.set_description("音频视频合并中")
