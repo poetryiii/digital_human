@@ -5,7 +5,7 @@ import json
 from requests.exceptions import RequestException
 
 # 配置
-BASE_URL = "http://localhost:9003"
+BASE_URL = "http://localhost:55071"
 TIMEOUT = 10  # 单次请求超时时间（秒）
 RETRY_INTERVAL = 2  # 轮询间隔（秒）
 MAX_RETRIES = 5  # 提交任务最大重试次数
@@ -62,7 +62,7 @@ def submit_task():
                 return task_id
             else:
                 print_color(f"❌ 提交失败，状态码: {response.status_code}", "red")
-                print_color(f"响应内容: {response.text[:200]}", "yellow")
+                print_color(f"响应内容: {response.text}", "yellow")
                 
         except RequestException as e:
             print_color(f"⚠️  请求异常: {str(e)}", "yellow")
